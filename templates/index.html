@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <title>RiasBet</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            overflow: hidden;
+            font-family: "Inter", sans-serif;
+            background-color: #FF4B4B;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            min-height: 581px;
+            margin: 0;
+            background-image: url(../logo2.png);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .container {
+            width: 90%; /* Use relative width for scaling */
+            max-width: 390px; /* Set a max width for larger screens */
+            position: relative;
+            top: 54px; /* Centering with a top offset */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px; /* Adjusted for a better look */
+            color: white;
+        }
+
+        .form-group {
+            width: 100%; /* Use full width of the container */
+            max-width: 267px; /* Set max width for form groups */
+            height: 46px;
+            background: #262626;
+            border-radius: 15px;
+            border: 2px solid #494949;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            color: #858585;
+            font-size: 15px;
+        }
+
+        .form-group select, .form-group input {
+            width: 100%;
+            height: 100%;
+            background: none;
+            border: none;
+            color: #858585;
+            font-size: 15px;
+            outline: none;
+            font-family: "Inter", sans-serif;
+        }
+
+        /* Hide the arrows on number input fields */
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        .placeholder {
+            color: #858585;
+            font-size: 15px;
+        }
+
+        .info-text {
+            margin-top: 20px;
+            font-size: 15px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<script>
+    Telegram.WebApp.MainButton.setParams({
+        text: 'Сделать ставку',
+        is_visible: true
+    }).onClick(sendData);
+
+    const mainButton = Telegram.WebApp.MainButton;
+
+    window.Telegram.WebApp.expand();
+    window.Telegram.WebApp.disableVerticalSwipes();
+
+    mainButton.show();
+
+    function updateInfoText() {
+        const inputField = document.getElementById("amountInput");
+        const infoText = document.getElementById("infoText");
+
+        inputField.addEventListener("input", function() {
+            const value = parseFloat(inputField.value);
+            if (value > 1000) {
+                infoText.textContent = "Максимальная сумма ставки: 1000$";
+            } else {
+                infoText.textContent = "Минимальная сумма ставки: 0.1$";
+            }
+        });
+    }
+
+    function setupGameSelect() {
+        const gameSelect = document.getElementById("typeSelect");
+        const gameSelect2 = document.getElementById("gameSelect");
+
+        updateGameOptions(false, 'none');
+
+        gameSelect2.addEventListener("change", function() {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred('soft');
+        });
+
+        gameSelect.addEventListener("change", function() {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred('soft');
+
+            const selectedValue = gameSelect.value;
+
+            if (selectedValue != "Выберите игру") {
+                updateGameOptions(true, selectedValue);
+            } else {
+                updateGameOptions(false, 'none');
+            }
+        });
+    }
+
+    function updateGameOptions(isGameSelected, game) {
+        const gameSelect = document.getElementById("gameSelect");
+        gameSelect.innerHTML = '';
+
+        if (!isGameSelected) {
+            const placeholderOption = document.createElement("option");
+            placeholderOption.text = "Сначала выберите игру";
+            placeholderOption.disabled = true;
+            placeholderOption.selected = true;
+            gameSelect.appendChild(placeholderOption);
+        } else {
+            const chooseOutcomeOption = document.createElement("option");
+            chooseOutcomeOption.text = "Выберите исход игры";
+            chooseOutcomeOption.disabled = true;
+            chooseOutcomeOption.selected = true;
+            gameSelect.appendChild(chooseOutcomeOption);
+
+            if (game == "ml") {
+                addOptions(gameSelect, [{value: "more", text: "Больше"}, {value: "less", text: "Меньше"}]);
+            } else if (game == "eo") {
+                addOptions(gameSelect, [{value: "even", text: "Чет"}, {value: "odd", text: "Нечет"}]);
+            } else if (game == "duel") {
+                addOptions(gameSelect, [{value: "win1", text: "Победа 1"}, {value: "win2", text: "Победа 2"}, {value: "draw", text: "Ничья"}]);
+            } else if (game == "sector") {
+                addOptions(gameSelect, [{value: "s1", text: "Сектор 1"}, {value: "s2", text: "Сектор 2"}, {value: "s3", text: "Сектор 3"}]);
+            } else if (game == "plinko") {
+                addOptions(gameSelect, [{disabled: true, text: "Нет доступных исходов."}]);
+            } else if (game == "knb") {
+                addOptions(gameSelect, [{value: "rock", text: "Камень"}, {value: "scissors", text: "Ножницы"}, {value: "paper", text: "Бумага"}]);
+            } else if (game == "basketball") {
+                addOptions(gameSelect, [{value: "goal", text: "Гол"}, {value: "miss", text: "Мимо"}]);
+            } else if (game == "soccer") {
+                addOptions(gameSelect, [{value: "goal", text: "Гол"}, {value: "miss", text: "Мимо"}]);
+            } else if (game == "darts") {
+                addOptions(gameSelect, [{value: "red", text: "Красное"}, {value: "white", text: "Белое"}, {value: "center", text: "Центр"}, {value: "miss", text: "Мимо"}]);
+            }
+        }
+    }
+
+    function addOptions(selectElement, options) {
+        options.forEach(option => {
+            const newOption = document.createElement("option");
+            if (option.disabled) newOption.disabled = true;
+            newOption.value = option.value || '';
+            newOption.text = option.text;
+            selectElement.appendChild(newOption);
+        });
+    }
+
+    document.addEventListener("click", function(event) {
+        if (!(event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)) {
+            if (document.activeElement) {
+                document.activeElement.blur();
+            } else {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('soft');
+            }
+        } else {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred('soft');
+        }
+    });
+
+    function sendData() {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('soft');
+
+        const gameType = document.getElementById("typeSelect").value;
+        const gameOutcome = document.getElementById("gameSelect").value;
+        const amount = document.getElementById("amountInput").value;
+
+        if (!gameType || gameType == "Выберите игру") {
+            alert("🎲 Вы не выбрали игру");
+            return;
+        }
+
+        if (!gameOutcome || gameOutcome == "Выберите исход игры") {
+            alert("💠 Вы не выбрали исход игры");
+            return;
+        }
+
+        if (!amount) {
+            alert("💵 Вы не ввели сумму ставки");
+            return;
+        }
+
+        if (amount < 0.6) {
+            alert("💵 Минимальная сумма ставки: 0.6$");
+            return;
+        }
+
+        if (amount > 1000) {
+            alert("💵 Максимальная сумма ставки: 1000$");
+            return;
+        }
+
+        const data = {
+            gameType: gameType,
+            gameOutcome: gameOutcome,
+            amount: amount,
+            userID: window.Telegram.WebApp.initDataUnsafe.user.id,
+            name: window.Telegram.WebApp.initDataUnsafe.user.first_name,
+        };
+
+        fetch("/RiasApi/createInvoiceWeb", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams(data).toString(),
+        })
+        .then(response => response.text())
+        .then(data => {
+            window.location.replace(data);
+        })
+        .catch(error => {
+            window.Telegram.WebApp.showAlert(`❌ Ошибка: ${error}`);
+        });
+    }
+
+    window.onload = function() {
+        updateInfoText();
+        setupGameSelect();
+    };
+</script>
+
+<div class="container">
+    <div class="form-group">
+        <select id="typeSelect" name="type">
+            <option class="placeholder" selected disabled>Выберите игру</option>
+            <!-- <option disabled>   </option> -->
+            <option disabled>🎲 Кости</option>
+            <option value="ml">Больше/Меньше</option>
+            <option value="eo">Чет/Нечет</option>
+            <option value="duel">Дуэль</option>
+            <option value="sector">Сектор</option>
+            <option value="plinko">Плинко</option>
+            <!-- <option disabled>   </option> -->
+            <option value="knb">🪨/✂️/📄 КНБ</option>
+            <option value="basketball">🏀 Баскетбол</option>
+            <option value="soccer">⚽️ Футбол</option>
+            <option value="darts">🎯 Дартс</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <select id="gameSelect" name="game">
+            <!-- Options will be dynamically added here -->
+        </select>
+    </div>
+
+    <div class="form-group">
+        <input type="number" id="amountInput" placeholder="Введите сумму ставки" pattern="^[0-9]+(\.[0-9]+)?$" inputmode="decimal" />
+        <div style="color: #5A5A5A; margin-left: 10px;">USD</div>
+    </div>
+
+    <div class="info-text" id="infoText">Минимальная сумма ставки: 0.6$</div>
+</div>
+
+</body>
+</html>
